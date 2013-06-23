@@ -1,0 +1,894 @@
+\documentclass{beamer}
+
+\usepackage{amsmath}
+\usepackage{fancyvrb}
+
+\usetheme{Berlin}
+
+\AtBeginSection[]%
+{%
+\begin{frame}%
+  \begin{center}%
+    \usebeamerfont{section title}\insertsection%
+  \end{center}%
+\end{frame}%
+}%
+
+\setbeamersize{text margin left=15pt}
+\newcommand{\ca}[1]{{\color{blue}#1}}
+\newcommand{\cb}[1]{{\color{violet}#1}}
+\newcommand{\cc}[1]{{\color{red}#1}}
+\newcommand{\cd}[1]{{\color{orange!90!black}#1}}
+\newcommand{\ce}[1]{{\color{green!50!black}#1}}
+
+\mode<presentation>
+
+\title{Laws for Folds and Theorems for Free}
+
+\author{Dave Laing}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents[pausesections]
+\end{frame}
+
+\section{Preliminaries}
+
+\begin{frame}[fragile]
+    \frametitle{Bottom}
+\begin{itemize}
+    \item<1-> We normally think of data types like this:\\
+    \verb?  data Bool = False?\\
+    \verb?            | True?\\
+    \item<2-> But in Haskell they're actually like this:\\
+    \verb?  data Bool = False?\\ 
+    \verb?            | True?\\ 
+    \verb?            |? $\bot$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Strict and Non-Strict Functions}
+
+\begin{itemize}
+    \item A function $f$ is strict if \verb?f ?$\bot$\verb? = ?$\bot$
+    \item Otherwise $f$ is non-strict
+    \item For example if \\
+    \verb?  f = const 2?\\ 
+    then \\
+    \verb?  f ?$\bot$\verb? = 2?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Non-strict example}
+
+\begin{itemize}
+    \item Consider \\
+    \verb?  and :: Bool -> Bool -> Bool?\\
+    \verb?  and False _  = False?\\
+    \verb?  and True  x  = x?\\
+    \verb?  and _     _  = ?$\bot$\\
+    \item Strict in the first argument
+    \begin{itemize}
+        \item \verb?and ?$\bot$\verb? x = ?$\bot$
+    \end{itemize}
+    \item Non-strict in the second argument
+    \begin{itemize}
+        \item \verb?and False ?$\bot$\verb? = False?
+        \item \verb?and True  ?$\bot$\verb? = ?$\bot$
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Strict example}
+
+\begin{itemize}
+    \item Consider \\
+    \verb?  and' :: Bool -> Bool -> Bool?\\
+    \verb?  and' False False = False?\\
+    \verb?  and' False True  = False?\\
+    \verb?  and' True  False = False?\\
+    \verb?  and' True  True  = True?\\
+    \item Strict in the first argument
+    \begin{itemize}
+        \item\verb?and' ?$\bot$\verb? x = ?$\bot$
+    \end{itemize}
+
+    \item Strict in the second argument
+    \begin{itemize}
+        \item\verb?and' x ?$\bot$\verb? = ?$\bot$
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Partial data}
+    \begin{itemize}
+        \item $(\bot, \bot) \ne \bot$
+        \begin{itemize}
+            \item A pair on the left, a... something... on the right
+        \end{itemize}
+        \item $[\bot] \ne \bot$
+        \begin{itemize}
+            \item It's a list with... something... in it
+        \end{itemize}
+        \item $(1 : 2 : 3 : \bot)$ is a list with at least three elements in it
+        \item Infinite lists are partial lists
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Proofs with Partial Lists}
+    \begin{itemize}
+        \item Prove $P($\verb?[]?$)$ and $P(xs) \rightarrow P(x:xs)$ 
+            \begin{itemize}
+                \item $P$ holds for all finite lists
+            \end{itemize}
+        \item Prove $P(\bot)$ and $P(xs) \rightarrow P(x:xs)$ 
+            \begin{itemize}
+                \item $P$ holds for all partial lists
+            \end{itemize}
+        \item Prove $P(\bot)$, $P($\verb?[]?$)$ and $P(xs) \rightarrow P(x:xs)$ 
+            \begin{itemize}
+                \item $P$ holds for all lists
+            \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\section{Fold fusion}
+
+\begin{frame}[fragile]
+    \frametitle{Fold Fusion}
+
+    \begin{itemize}
+        \item When does \\
+        \verb?  f . foldr g a = foldr h b? ?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Deriving the Fold Fusion Law}
+
+\begin{itemize}
+    \item<1-> Case $\bot$    
+    \item<2-> \verb?f (foldr g a ?$\bot$\verb?) = foldr h b ?$\bot$    
+    \item<3-> \verb?f ?$\bot$\verb? = ?$\bot$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Deriving the Fold Fusion Law}
+
+\begin{itemize}
+    \item<1-> Case \verb?[]?    
+    \item<2-> \verb?f (foldr g a []) = foldr h b []?
+    \item<3-> \verb?f a = b?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Deriving the Fold Fusion Law}
+
+\begin{itemize}
+    \item<1-> Case \verb?(x:xs)? 
+    \item<2-> Assume \verb?f (foldr g a xs) = foldr h b xs?
+    \item<3-> \verb?f (foldr g a (x:xs)) = foldr h b (x:xs)?
+    \item<4-> \verb?f (g x (foldr g a xs)) = h x (foldr h b xs)?
+    \item<5-> Let \\
+    \verb?  y = foldr g a xs?
+    \item<6-> Note that  \\
+    \verb?  f(y) = f (foldr g a xs) = foldr h b xs?
+    \item<7-> And so \\
+    \verb?  f (g x y) = h x (f y)?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{The Fold Fusion Law}
+
+So the conditions are
+\begin{itemize}
+    \item \verb?f? is strict\\
+    \item \verb?f a = b?\\
+    \item \verb?f (g x y) = h x (f y)?\\
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+    \frametitle{Uses}
+
+\begin{itemize}
+    \item Reason about things that already exist
+    \item Speed up your code
+    \begin{itemize}
+        \item directly
+        \item via rules pragmas
+        \item let the compiler do it (but know it can happen)
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Fold-Map Fusion}
+
+\begin{itemize}
+    \item Remember that \\
+    \verb?  map g = foldr ((:) . g) []?\\
+    so \\
+    \verb?  foldr f a . map g = foldr h b?\\
+    is subject to fold fusion.
+    \item Fold fusion conditions imply that
+    \begin{itemize}
+        \item \verb?a = b?
+        \item \verb?f . g = h?
+    \end{itemize}
+    \item Resulting law is \\
+    \verb?  foldr f a . map g = foldr (f . g) a?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Fold-Concat Fusion}
+
+\begin{itemize}
+    \item Remember that\\
+    \verb?  concat = foldr (++) []?\\
+    so\\
+    \verb?  foldr f a . concat?\\
+    is subject to fold fusion.\\
+    \item Spolier alert:\\
+    \verb?  foldr f a . concat =  foldr (flip (foldr f)) a?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Bookkeeping law}
+
+    \begin{itemize}
+        \item Fold fusion works with map and with concat.
+        \item So \\
+        \verb?  foldr f a . concat = foldr g b . map h?
+        \item Works out as \\
+        \verb?  foldr f a . concat = foldr f a . map (foldr f a)?
+        \item Examples:
+        \begin{itemize}
+            \item \verb?sum . concat = sum . map sum?
+            \item \verb?concat . concat = concat . map concat?
+        \end{itemize}
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Scans}
+
+\begin{itemize}
+    \item Like a fold that shows its working
+    \item Uses \verb?inits?
+        \begin{itemize}
+            \item \verb?inits [1,2,3] = [[],[1],[1,2],[1,2,3]]?
+        \end{itemize}
+    \item \verb?scanl f a = map (foldl f a) . inits?
+    \item For example
+        \begin{itemize}
+            \item \verb?scanl (+) 0 [1..4] = [0, 1, 3, 6, 10]?
+        \end{itemize}
+    \item Can work from the right as well
+        \begin{itemize}
+            \item \verb?scanr f a = map (foldr f a) . tails?
+        \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Fold-Scan Fusion}
+
+\begin{itemize}
+    \item Consider\\ 
+    \verb?  ?$1 + x_0 + x_0 * x_1 + x_0 * x_1 * x_2 + \ldots$\\
+    \item Group terms\\
+    \verb?  ?$1 + x_0 * (1 + x_1 * (1 + x_2 * \ldots))$\\
+    \item Haskellizes to\\
+    \verb?  foldr1 (+) . scanl (*) 1?\\
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Fold-Scan Fusion}
+
+\begin{itemize}
+    \item When does\\
+        \verb?  foldr1 (+) . scanl (*) e = foldr (?$\odot$\verb?) e?\\
+    \item If
+        \begin{itemize}
+            \item \verb?*? is associative with unit \verb?e?
+            \item \verb?*? distributes over \verb?+?
+        \end{itemize}
+    \item Then \\
+        \verb?foldr1 (+) . scanl (*) e = foldr (?$\odot$\verb?) e?\\
+        \verb?  where ? \\
+        \verb?    x ?$\odot$\verb? y = e + (x * y)?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Maximum Subset Sum}
+
+\begin{itemize}
+    \item Problem posed and solved by Richard Bird
+    \item Example of behaviour-preserving transformations from a trivially correct program to an efficient program
+    \item Goal is to find the maximum sum of contiguous elements
+    \item
+    \verb?mss = maxlist . map sum . segs? \\
+    \verb?  where? \\
+    \verb?    maxlist = foldr1 max? \\
+    \verb?    segs = concat . map inits . tails?
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{Maximum Subset Sum}
+    
+For example: \verb?mss [1, 2, -3]?
+
+\begin{center}
+\begin{overprint}
+
+\onslide<2>
+\begin{semiverbatim}
+                       \cb{tails} [1, 2,-3] = 
+  [                  [1, 2,-3]  , 
+              [2,-3]  , 
+         [-3]  , 
+      []   ]
+\end{semiverbatim}
+
+\onslide<3>
+\begin{semiverbatim}
+         \cb{map inits . tails} \$ [1, 2,-3] = 
+  [                  [1, 2,-3]  , 
+              [2,-3]  , 
+         [-3]  , 
+      []   ]
+\end{semiverbatim}
+
+\onslide<4>
+\begin{semiverbatim}
+         \cb{map inits . tails} \$ [1, 2,-3] = 
+  [ [ [],[ 1],[1, 2],[1, 2,-3] ], 
+    [ [],[ 2],[2,-3] ], 
+    [ [],[-3] ], 
+    [ [] ] ]
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+\cb{concat . map inits . tails} \$ [1, 2,-3] = 
+  [ [ [],[ 1],[1, 2],[1, 2,-3] ], 
+    [ [],[ 2],[2,-3] ], 
+    [ [],[-3] ], 
+    [ [] ] ]
+\end{semiverbatim}
+
+\onslide<6>
+\begin{semiverbatim}
+\cb{concat . map inits . tails} \$ [1, 2,-3] = 
+  [   [],[ 1],[1, 2],[1, 2,-3]  , 
+      [],[ 2],[2,-3]  , 
+      [],[-3]  , 
+      []   ]
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+                        \cb{segs} [1, 2,-3] = 
+  [   [],[ 1],[1, 2],[1, 2,-3]  , 
+      [],[ 2],[2,-3]  , 
+      [],[-3]  , 
+      []   ]
+\end{semiverbatim}
+
+\onslide<8>
+\begin{semiverbatim}
+            \cb{map sum . segs} \$ [1, 2,-3] = 
+  [   [],[ 1],[1, 2],[1, 2,-3]  , 
+      [],[ 2],[2,-3]  , 
+      [],[-3]  , 
+      []   ]
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+            \cb{map sum . segs} \$ [1, 2,-3] = 
+  [    0,  1 ,    3 ,       0   , 
+       0,  2 ,   -1   , 
+       0, -3  , 
+       0   ]
+\end{semiverbatim}
+
+\onslide<10>
+\begin{semiverbatim}
+  \cb{maxlist . map sum . segs} \$ [1, 2,-3] = 
+  [    0,  1 ,    \ca{3} ,       0   , 
+       0,  2 ,   -1   , 
+       0, -3  , 
+       0   ]
+\end{semiverbatim}
+
+\onslide<11>
+\begin{semiverbatim}
+  \cb{maxlist . map sum . segs} \$ [1, 2,-3] = 3
+\end{semiverbatim}
+
+\onslide<12>
+\begin{semiverbatim}
+                         \cb{mss} [1, 2,-3] = 3
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\vspace{10pt}
+
+\begin{overprint}
+    
+\onslide<1>
+\begin{semiverbatim}
+mss = maxlist . map sum . segs
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . tails
+\end{semiverbatim}
+
+\onslide<2>
+\begin{semiverbatim}
+mss = maxlist . map sum . segs
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . \cb{tails}
+\end{semiverbatim}
+
+\onslide<3-4>
+\begin{semiverbatim}
+mss = maxlist . map sum . segs
+  where
+    maxlist = foldr1 max
+    segs = concat . \cb{map inits . tails}
+\end{semiverbatim}
+
+\onslide<5-6>
+\begin{semiverbatim}
+mss = maxlist . map sum . segs
+  where
+    maxlist = foldr1 max
+    segs = \cb{concat . map inits . tails}
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+mss = maxlist . map sum . \cb{segs}
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . tails
+\end{semiverbatim}
+
+\onslide<8-9>
+\begin{semiverbatim}
+mss = maxlist . \cb{map sum . segs}
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . tails
+\end{semiverbatim}
+
+\onslide<10-11>
+\begin{semiverbatim}
+mss = \cb{maxlist . map sum . segs}
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . tails
+\end{semiverbatim}
+
+\onslide<12>
+\begin{semiverbatim}
+\cb{mss} = maxlist . map sum . segs
+  where
+    maxlist = foldr1 max
+    segs = concat . map inits . tails
+\end{semiverbatim}
+
+\end{overprint}
+
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{Maximum Subset Sum}
+
+\begin{center}
+\begin{overprint}
+
+\onslide<1>
+\begin{semiverbatim}
+  \cb{mss}
+=    \{ definition of mss \}
+  \cb{maxlist . map sum . segs}
+\end{semiverbatim}
+
+\onslide<2>
+\begin{semiverbatim}
+  maxlist . map sum . \cb{segs}
+=    \{ definition of segs \}
+  maxlist . map sum . \cb{concat . map inits . tails}
+\end{semiverbatim}
+
+\onslide<3>
+\begin{semiverbatim}
+  maxlist . \cb{map sum . concat} . map inits . tails
+=    \{ bookkeepers law \}
+  maxlist . \cb{concat . map (map sum)} . map inits . tails
+\end{semiverbatim}
+
+\onslide<4>
+\begin{semiverbatim}
+  \cb{maxlist . concat} . map (map sum) . map inits . tails
+=    \{ bookkeepers law \}
+  \cb{maxlist . map maxlist} . map (map sum) . map inits . tails
+\end{semiverbatim}
+
+\onslide<5>
+\begin{semiverbatim}
+  maxlist . \cb{map maxlist . map (map sum) . map inits} . tails
+=    \{ functor law \}
+  maxlist . \cb{map (maxlist . map sum . inits)} . tails
+\end{semiverbatim}
+
+\onslide<6>
+\begin{semiverbatim}
+  maxlist . map (maxlist . \cb{map sum . inits}) . tails
+=    \{ definition of scanl \}
+  maxlist . map (maxlist . \cb{scanl (+) 0}) . tails
+\end{semiverbatim}
+
+\onslide<7>
+\begin{semiverbatim}
+  maxlist . map (\cb{maxlist} . scanl (+) 0) . tails
+=    \{ definition of maxlist \}
+  maxlist . map (\cb{foldr1 max} . scanl (+) 0) . tails
+\end{semiverbatim}
+
+\onslide<8>
+\begin{semiverbatim}
+  maxlist . map (\cb{foldr1 max . scanl (+) 0}) . tails
+=    \{ fold-scan fusion \}
+     \{ + associative with unit 0 \}
+     \{ + distributes over max \}
+  maxlist . map (\cb{foldr addpos 0}) . tails
+    where
+      addpos x y = 0 `max` (x + y)
+\end{semiverbatim}
+
+\onslide<9>
+\begin{semiverbatim}
+  maxlist . \cb{map (foldr addpos 0) . tails}
+=    \{ definition of scanr \}
+  maxlist . \cb{scanr addpos 0}
+\end{semiverbatim}
+
+\end{overprint}
+\end{center}
+
+\end{frame}
+
+\section{Natural transformations}
+
+\begin{frame}[fragile]
+    \frametitle{Definition}
+
+    \begin{itemize}
+        \item Take two functors \\
+        \verb?  F, G?
+        \item Add a function \\
+        \verb?  f :: A -> B?
+        \item The natural transformation $\eta$ makes \\ 
+            $G(f) \circ \eta_A = \eta_B \circ F(f)$
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{What?}
+\begin{itemize}
+    \item Examples help
+    \item $F$\verb? = [[]]?
+        \begin{itemize}
+            \item $F(f)$\verb? = map (map f)?
+        \end{itemize}
+    \item $G$\verb? = []?
+        \begin{itemize}
+            \item $G(f)$\verb? = map f?
+        \end{itemize}
+    \item That means $\eta$\verb? = concat? is a natural transformation between the list functor and the list-of-lists functor
+        \begin{itemize}
+            \item \verb?map f . concat = concat . map (map f)?
+        \end{itemize}
+    \item<2-> Bam!
+        \begin{itemize}
+            \item<3-> New law
+        \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{More examples}
+\begin{itemize}
+    \item $F$\verb? = ?$G$\verb? = []?
+        \begin{itemize}
+            \item $F(f)$\verb? = ?$G(f)$\verb? = map f?
+        \end{itemize}
+    \item Lots of options for $\eta$
+        \begin{itemize}
+            \item \verb?map f . reverse = reverse . map f?
+            \item \verb?map f . tail = tail . map f?
+            \item \verb?map f . init = init . map f?
+        \end{itemize}
+    \item<2-> Bam! Bam! Bam!
+        \begin{itemize}
+            \item<3-> New laws aplenty
+        \end{itemize}
+    \item<4-> Any re-arrangement of the list will do
+\end{itemize}
+\end{frame}
+
+\section{Parametericity}
+
+\begin{frame}[fragile]
+    \frametitle{Polymorphic functions}
+
+\begin{itemize}
+    \item Consider \\
+        \verb?g :: forall A. [A] -> [A]?\\
+    \item Could be \verb?reverse?
+    \item Could be \verb?tail?
+    \item Can only be a function that somehow rearranges the elements in the list
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{A free theorem appears}
+
+\begin{itemize}
+    \item We know that \\
+    \verb?  map f . reverse = reverse . map f?
+    \item We also know that\\
+    \verb?  map f . tail = tail . map f?
+    \item Actually true that\\
+    \verb?  map f . g = g . map f?\\
+    whenever\\
+    \verb?  g :: forall A. [A] -> [A]?\\
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Polymorphism required}
+\begin{itemize}
+    \item Consider\\
+    \verb?  g :: [Int] -> [Int]?\\
+    \verb?  g = filter odd?
+    \item and\\
+    \verb?  f :: Int -> Int?\\
+    \verb?  f x = 2 * x?
+    \item Pretty clear that\\
+    \verb?  map f . g ?$\ne$\verb? g . map f?
+    \item Stupid types, ruining stuff
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{The laws are \textit{in} the types}
+\begin{itemize}
+    \item The laws can be derived mechanically
+    \item Works for a variety of different typed functional languages
+    \item Functions involved must be strict if \verb?fix? is in the language
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Relations on types}
+
+\begin{itemize}
+    \item The relationship between the sets $A$ and $\acute{A}$ is denoted by $\mathcal{A} : A \Leftrightarrow \acute{A}$
+    \item Equivalent to $\mathcal{A} \subseteq A \times \acute{A}$
+    \item So $(x, \acute{x}) \in \mathcal{A}$ means $x$ and $\acute{x}$ are related by $\mathcal{A}$ 
+    \item If $t : T$ then $(t, t) \in \mathcal{T}$
+    \item We can specialize the relation $\mathcal{A}$ to a function \verb?a : ?$A \rightarrow \acute{A}$
+        \begin{itemize}
+            \item Then $(x, \acute{x}) \in a$ is the same as \\
+                $a\ x = \acute{x}$
+        \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Building relations - pairs}
+
+\begin{itemize}
+    \item 
+        $((x,y),(\acute{x},\acute{y})) \in \mathcal{A} \times \mathcal{B}$ \\
+        \verb?   ?is equivalent to \\
+        $(x,\acute{x}) \in \mathcal{A}$ and $(y, \acute{y}) \in \mathcal{B}$
+    \item If we specialize $\mathcal{A}$ and $\mathcal{B}$ to functions $a$ and $b$ then \\
+        $(a \times b)(x, y) = (a\ x, b\ y)$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Building relations - lists}
+
+\begin{itemize}
+    \item 
+        $([x_0, \ldots, x_n],[\acute{x}_0, \ldots, \acute{x}_n]) \in [\mathcal{A}]$ \\
+        \verb?    ?is equivalent to \\
+        $(x_0, \acute{x}_0) \in \mathcal{A}, \ldots, (x_n, \acute{x}_n) \in \mathcal{A}$
+    \item If we specialize $\mathcal{A}$ to function $a$ then \\
+        $(xs,\acute{xs}) \in [a]$ \\
+        \verb?    ?for all $i$, $a\ x_i = \acute{x}_i$ 
+    \item Works out as \\
+        $map\ a\ xs = \acute{xs}$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Building relations - from other relations}
+
+\begin{itemize}
+    \item
+        $(f, \acute{f}) \in \mathcal{A} \rightarrow \mathcal{B}$ \\
+        \verb?    ?is equivalent to \\
+        for all $(x, \acute{x}) \in \mathcal{A}$, $(f\ x, \acute{f}\ \acute{x}) \in \mathcal{B}$
+    \item If we specialize $\mathcal{A}$ and $\mathcal{B}$ to functions $a$ and $b$ then \\
+        $(f,\acute{f}) \in a \rightarrow b$ \\
+        \verb?    ?is equivalent to \\
+        $\acute{f} \circ a = b \circ f$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Building relations - foralls}
+
+\begin{itemize}
+    \item 
+        $(g,\acute{g}) \in \forall \mathcal{X}. \mathcal{F}(\mathcal{X})$ \\
+        \verb?    ?is equivalent to\\
+        for all $\mathcal{A} : A \Leftrightarrow \acute{A}$, $(g_A, \acute{g}_{\acute{A}}) \in \mathcal{F}(\mathcal{A})$
+    \item Means that for a relation through a forall, we add a relation and impose no restrictions on it 
+    \begin{itemize}
+        \item since it has to work for all relations we could have used
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile,t]
+    \frametitle{Rearranging functions}
+
+\begin{overprint}    
+
+\onslide<1>    
+$g : \forall W. [W] \rightarrow [W]$
+
+\onslide<2>
+$(g,g) \in \forall \mathcal{W}. [\mathcal{W}] \rightarrow [\mathcal{W}]$
+
+\onslide<3>
+for all $\mathcal{X} : X \Leftrightarrow \acute{X}$\\
+\verb?  ?$(g_X, g_{\acute{X}}) \in [\mathcal{X}] \rightarrow [\mathcal{X}]$
+
+\onslide<4>
+for all $\mathcal{X} : X \Leftrightarrow \acute{X}$\\
+\verb?  ?for all $(xs, \acute{xs}) \in [X]$\\
+\verb?    ?$(g_A\ xs, g_{\acute{A}}\ \acute{xs}) \in [X]$
+
+\onslide<5>
+for all $f : X \rightarrow \acute{X}$\\
+\verb?  ?for all $xs, \acute{xs} \in [X]$\\
+\verb?    ?If $map\ f\ xs = \acute{xs}$\\
+\verb?      ?Then $map\ f\ (g_A\ xs) = g_{\acute{A}}\ \acute{xs}$
+
+\onslide<6>
+for all $f : X \rightarrow \acute{X}$\\
+\verb?  ?for all $xs \in [X]$\\
+\verb?    ?$map\ f\ (g_A\ xs) = g_{\acute{A}}\ (map\ f\ xs)$\\
+\verb? ?\\
+$map\ f \circ g_A = g_{\acute{A}} \circ map\ f$
+
+\end{overprint}
+
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Fold law for free}
+\begin{itemize}
+    \item \verb?foldr :: (X -> Y -> Y) -> Y -> [X] -> Y?\\
+    \item If\\ 
+    \verb?  f (g x y) = h (e x) (f y)?\\
+    Then \\
+    \verb?  f . foldr g u = foldr h (f u) . map e?
+    \item Same as what we had before when e = id
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{Other cool stuff}
+\begin{itemize}
+    \item Can work with predicates
+        \begin{itemize}
+            \item \verb?sort :: (X -> X -> Bool) -> [X] -> [X]?\\
+            \item If\\
+            \verb?  (x < y) = (a x < a y)?\\
+            Then \\
+            \verb?  map a . sort (<) = sort (<) . map a?
+        \end{itemize}
+    \item Can work with polymorphic equality
+        \begin{itemize}
+            \item So \verb?Eq a => ...? typeclass constraints are allowed
+        \end{itemize}
+\end{itemize}
+\end{frame}
+
+\section*{}
+
+\begin{frame}
+    \frametitle{Conclusion}
+    \begin{itemize}
+        \item Laws can arise without typeclasses   
+        \item They can be handy
+        \begin{itemize}
+            \item Handy to use
+            \item Handy to know
+        \end{itemize}
+        \item Polymorphic types correspond to free theorems
+        \item Free theorems correspond to natural transformations
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Sources of things}
+    \begin{itemize}
+        \item Theorems for Free by Philip Wadler
+        \begin{itemize}
+            \item Builds on Reynolds' abstraction theorem
+        \end{itemize}
+        \item Algebra of Programming by Bird and De Moor has more advanced stuff 
+        \item Slides at https://github.com/dalaing/bfpg-2013-06
+    \end{itemize}
+\end{frame}
+
+\end{document}
